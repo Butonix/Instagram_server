@@ -1,8 +1,7 @@
 var restify = require('restify');
 var mongojs = require('mongojs');
 var db = mongojs('productsdb', ['products']);
-//drop
-db.dropDatabase();
+
 //server
 var server = restify.createServer();
 
@@ -24,7 +23,9 @@ server.listen(process.env.PORT || 3000, function () {
 
 server.post('/product', function (req, res, next) {
     var product = req.params;
-    console.log(product);
+    db.products.remove(function (argument) {
+        console.log("DB Cleanup Completd");
+    });
     db.products.save(product,
         function (err, data) {
             res.writeHead(200, {
@@ -44,5 +45,6 @@ server.get("/products", function (req, res, next) {
     });
     return next();
 });
+
 
 module.exports = server;
