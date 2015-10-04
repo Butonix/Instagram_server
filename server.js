@@ -1,13 +1,14 @@
 var restify = require('restify');
 var mongojs = require('mongojs');
-var db = mongojs('productsdb', ['products']);
+var morgan  = require('morgan');
+var db      = mongojs('instagramdb', ['users', 'posts', 'comments']);
+var server  = restify.createServer();
 
-//server
-var server = restify.createServer();
 
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());
 server.use(restify.bodyParser());
+server.use(morgan('dev')); // LOGGER
 
 // CORS
 server.use(function(req, res, next) {
@@ -17,34 +18,10 @@ server.use(function(req, res, next) {
     next();
 });
 
+var users   = require('./app/controller/UserController')(server, db);
+
 server.listen(process.env.PORT || 3000, function () {
     console.log("Server started @ ",process.env.PORT || 3000);
 });
-
-server.post('/product', function (req, res, next) {
-    var product = req.params;
-    db.products.remove(function (argument) {
-        console.log("DB Cleanup Completd");
-    });
-    db.products.save(product,
-        function (err, data) {
-            res.writeHead(200, {
-                'Content-Type': 'application/json; charset=utf-8'
-            });
-            res.end(JSON.stringify(data));
-        });
-    return next();
-});
-
-server.get("/products", function (req, res, next) {
-    db.products.find(function (err, products) {
-        res.writeHead(200, {
-            'Content-Type': 'application/json; charset=utf-8'
-        });
-        res.end(JSON.stringify(products));
-    });
-    return next();
-});
-
 
 module.exports = server;
