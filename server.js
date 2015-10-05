@@ -4,7 +4,6 @@ var morgan  = require('morgan');
 var db      = mongojs('instagramdb', ['users', 'posts', 'comments']);
 var server  = restify.createServer();
 
-
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());
 server.use(restify.bodyParser());
@@ -18,7 +17,8 @@ server.use(function(req, res, next) {
     next();
 });
 
-var users   = require('./app/controller/UserController')(server, db);
+// var users   = require('./app/controller/UserController')(server, db);
+var route   = require('./app/route')(server, db);
 
 server.listen(process.env.PORT || 3000, function () {
     console.log("Server started @ ",process.env.PORT || 3000);

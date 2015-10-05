@@ -1,7 +1,7 @@
 module.exports = function (server, db) {
-    var authenticate = require("../auth/authenticate");
+    var authenticate = require("../middleware/authentication");
  
-    server.get("/api/v1/bucketList/data/list", function (req, res, next) {
+    server.get('/api/v1/bucketList/data/list', function (req, res, next) {
 
         authenticate.validate(req, res, db, function () {
             
