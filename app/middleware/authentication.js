@@ -1,35 +1,25 @@
-var isEmailValid = function (db, email, callback) {
-    db.users.findOne({
-        email: email
-    }, function (err, user) {
-        callback(user);
-    });
-};
- 
-module.exports.validate = function (req, res, db, callback) {
-    // if the request dosent have a header with email, reject the request
-    if (!req.params.token) {
-        res.writeHead(403, {
-            'Content-Type': 'application/json; charset=utf-8'
-        });
-        res.end(JSON.stringify({
-            error: "You are not authorized to access this application",
-            message: "An Email is required as part of the header"
-        }));
-    };
- 
- 
-    isEmailValid(db, req.params.token, function (user) {
-        if (!user) {
-            res.writeHead(403, {
-                'Content-Type': 'application/json; charset=utf-8'
+module.exports = function(server) {
+    server.use(function(req, res, next) {
+    
+        var token = req.body.token || req.query.token || req.headers['x-access-token'];
+
+        if (token) {
+
+            // verifies secret and checks exp
+            jwt.verify( token, config.secret, function(err, decoded) {      
+                if (err) {
+                    return res.send(403, { success: false, message: 'You are not authorized to access this application' });    
+                } else {
+                    // if everything is good, save to request for use in other routes
+                    req.reqUser = decoded;    
+                    next();
+                }
             });
-            res.end(JSON.stringify({
-                error: "You are not authorized to access this application",
-                message: "Invalid User Email"
-            }));
+
         } else {
-            callback();
+            // if there is no token
+            // return an error
+            return res.send(403, { success: false, message: 'No token provided.' });
         }
     });
 };

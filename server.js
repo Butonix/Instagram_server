@@ -1,6 +1,7 @@
 var restify = require('restify');
 var mongojs = require('mongojs');
 var morgan  = require('morgan');
+var jwt     = require('jsonwebtoken');
 var db      = mongojs('instagramdb', ['users', 'posts', 'comments']);
 var server  = restify.createServer();
 
@@ -11,9 +12,9 @@ server.use(morgan('dev')); // LOGGER
 
 // CORS
 server.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', "*");
+    res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-type, Authorization');
     next();
 });
 
