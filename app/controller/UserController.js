@@ -7,7 +7,6 @@ module.exports = function(server, db) {
 
     // readAll
     server.get('/api/user/all', function (req, res, next) {
-
         db.users.find(function (err, dbUser) {
             res.send(200, dbUser);
         });
