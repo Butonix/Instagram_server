@@ -1,96 +1,119 @@
-module.exports = function (server, db) {
-    var authenticate = require("../middleware/authentication");
+var pwdMgr = require('../middleware/password');
+var config = require('../config');
+var authentication = require('../middleware/authentication');
+var jwt    = require('jsonwebtoken');
  
-    server.get('/api/v1/bucketList/data/list', function (req, res, next) {
+module.exports = function(server, db) {
 
-        authenticate.validate(req, res, db, function () {
-            
-            db.bucketLists.find({
-                user : req.params.token
-            },function (err, list) {
+    // readAll
+    server.get('/api/post/all', authentication, function (req, res, next) {
 
-                res.writeHead(200, {
-                    'Content-Type': 'application/json; charset=utf-8'
-                });
-                res.end(JSON.stringify(list));
-            });
-        });
-        return next();
-    });
- 
-    server.get('/api/v1/bucketList/data/item/:id', function (req, res, next) {
+        db.posts.find({ user_id: req.reqUser._id }, function (err, dbPost) {
+            if (err) throw err;
 
-        authenticate.validate(req, res, db, function () {
-            
-            db.bucketLists.find({
-                _id: db.ObjectId(req.params.id)
-            }, function (err, data) {
-                res.writeHead(200, {
-                    'Content-Type': 'application/json; charset=utf-8'
-                });
-                res.end(JSON.stringify(data));
-            });
+            if (!!dbPost) {
+                res.send(200, dbUser);
+            } else {
+                res.send({ success: false, message: 'No post to show!', posts: dbPost });
+            }
         });
         return next();
     });
- 
-    server.post('/api/v1/bucketList/data/item', function (req, res, next) {
-        authenticate.validate(req, res, db, function () {
-            var item = req.params;
-            db.bucketLists.save(item,
-                function (err, data) {
-                    res.writeHead(200, {
-                        'Content-Type': 'application/json; charset=utf-8'
-                    });
-                    res.end(JSON.stringify(data));
-                });
-        });
-        return next();
-    });
- 
-    server.put('/api/v1/bucketList/data/item/:id', function (req, res, next) {
-        authenticate.validate(req, res, db, function () {
-            db.bucketLists.findOne({
-                _id: db.ObjectId(req.params.id)
-            }, function (err, data) {
-                // merge req.params/product with the server/product
- 
-                var updProd = {}; // updated products 
-                // logic similar to jQuery.extend(); to merge 2 objects.
-                for (var n in data) {
-                    updProd[n] = data[n];
-                }
-                for (var n in req.params) {
-                    if (n != "id")
-                        updProd[n] = req.params[n];
-                }
-                db.bucketLists.update({
-                    _id: db.ObjectId(req.params.id)
-                }, updProd, {
-                    multi: false
-                }, function (err, data) {
-                    res.writeHead(200, {
-                        'Content-Type': 'application/json; charset=utf-8'
-                    });
-                    res.end(JSON.stringify(data));
-                });
-            });
-        });
-        return next();
-    });
- 
-    server.del('/api/v1/bucketList/data/item/:id', function (req, res, next) {
-        authenticate.validate(req, res, db, function () {
-            db.bucketLists.remove({
-                _id: db.ObjectId(req.params.id)
-            }, function (err, data) {
-                res.writeHead(200, {
-                    'Content-Type': 'application/json; charset=utf-8'
-                });
-                res.end(JSON.stringify(data));
-            });
+
+    // create
+    server.post('/api/post', authentication, function (req, res, next) {
+        var newPost = req.params;
+
+        if (!newPost.image) {
+            res.send(403, { message: 'Upload image failed!' });
             return next();
-        });
+        }
+        
+        db.posts.insert(newPost, function (err, dbPost) {
+            if (err) throw err;
+            res.send(200, { message: 'New file uploaded!', post: newPost });
+        })
+        return next();
     });
+
+    // read post
+    server.get('/api/post/:id', authentication, function (req, res, next) {
+        db.posts.findOne({ _id: req.reqUser._id }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) { // user doesnt exist
+                res.send(404, {success: false, message: 'User not found.'});
+                return next();
+            }
+
+            res.send(200, dbUser);
+        });
+
+        return next();
+    });
+
+    // update post
+    server.put('/api/post/:id', authentication, function (req, res, next) {
+        var editUser = req.params;
+
+        if (editUser.username === 0) {
+            res.send(403, { message: 'Username is required!' });
+            return next();
+        }
+
+        db.users.findOne({ _id: req.reqUser._id }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) { // user doesnt exist
+                res.send(403, {success: false, message: 'User not found.'});
+                return next();
+            }
+
+            if (!!editUser.username && editUser.username !== dbUser.username) {
+                dbUser.username = editUser.username;
+                return next();
+            }
+
+            if (!!editUser.newPassword && editUser.newPassword !== "") {
+                pwdMgr.comparePassword(editUser.oldPassword, dbUser.password, function (err, isPasswordMatch) {
  
-}
+                    if (isPasswordMatch) {                    
+                        dbUser.password = editUser.newPassword;
+                        res.send(200, { message: "Password changed!" });
+                    } else {
+                        res.send(403, { message: "Authentication failed. Wrong password." });
+                    }
+     
+                });
+            }
+
+            if (!!editUser.avatar) {
+                dbUser.avatar = editUser.avatar;
+            }
+
+            db.users.update({ _id: req.reqUser._id }, function (err, dbUser) {
+                if (err) throw err;
+                res.send(200, { message: 'Profile updated!' });
+            });
+            
+        });
+
+        return next();
+    });
+
+    // delete post
+    server.del('/api/post/:id', authentication, function (req, res, next) {
+        db.users.findOne({ _id: req.reqUser._id }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) { // user doesnt exist
+                res.send(404, {success: false, message: 'User not found.'});
+                return next();
+            }
+
+            res.send(200, dbUser);
+        });
+
+        return next();
+    });
+};

@@ -13,7 +13,7 @@ module.exports = function (req, res, next) {
                 return res.send(403, { success: false, message: 'You are not authorized to access this application' });    
             } else {
                 // if everything is good, save to request for use in other routes
-                req.reqUser = decoded;    
+                req.reqUser = decoded;
                 next();
             }
         });
