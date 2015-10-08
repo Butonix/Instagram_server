@@ -1,21 +1,23 @@
-var pwdMgr = require('../middleware/password');
-var config = require('../config');
-var authentication = require('../middleware/authentication');
-var jwt    = require('jsonwebtoken');
+var pwdMgr          = require('../middleware/password');
+var config          = require('../config');
+var authentication  = require('../middleware/authentication');
+var jwt             = require('jsonwebtoken');
+var mongojs         = require('mongojs');
  
 module.exports = function(server, db) {
 
     // readAll
     server.get('/api/post/all', authentication, function (req, res, next) {
+        db.posts.find({ $oderby: { createdTime: -1 } }, function (err, dbPost) {
+            res.send(200, dbPost);
+        });
+        return next();
+    });
 
-        db.posts.find({ user_id: req.reqUser._id }, function (err, dbPost) {
-            if (err) throw err;
-
-            if (!!dbPost) {
-                res.send(200, dbUser);
-            } else {
-                res.send({ success: false, message: 'No post to show!', posts: dbPost });
-            }
+    // readAll - user
+    server.get('/api/post/user/:id', authentication, function (req, res, next) {
+        db.posts.find({ $query: {user_id: req.params.id}, $orderby: { createdTime: -1 } }, function (err, dbPost) {
+            res.send(200, dbPost);
         });
         return next();
     });
@@ -28,25 +30,27 @@ module.exports = function(server, db) {
             res.send(403, { message: 'Upload image failed!' });
             return next();
         }
+
+        newPost.user_id = req.reqUser._id;
         
         db.posts.insert(newPost, function (err, dbPost) {
             if (err) throw err;
-            res.send(200, { message: 'New file uploaded!', post: newPost });
+            res.send(200, { message: 'New file uploaded!', post: dbPost });
         })
         return next();
     });
 
     // read post
     server.get('/api/post/:id', authentication, function (req, res, next) {
-        db.posts.findOne({ _id: req.reqUser._id }, function (err, dbUser) {
+        db.posts.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbPost) {
             if (err) throw err;
 
-            if (!dbUser) { // user doesnt exist
-                res.send(404, {success: false, message: 'User not found.'});
+            if (!dbPost) { // user doesnt exist
+                res.send(404, {success: false, message: 'Image not found.'});
                 return next();
             }
 
-            res.send(200, dbUser);
+            res.send(200, dbPost);
         });
 
         return next();
@@ -54,66 +58,45 @@ module.exports = function(server, db) {
 
     // update post
     server.put('/api/post/:id', authentication, function (req, res, next) {
-        var editUser = req.params;
+        var editPost = req.params;
 
-        if (editUser.username === 0) {
-            res.send(403, { message: 'Username is required!' });
-            return next();
-        }
-
-        db.users.findOne({ _id: req.reqUser._id }, function (err, dbUser) {
+        db.posts.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbPost) {
             if (err) throw err;
 
-            if (!dbUser) { // user doesnt exist
-                res.send(403, {success: false, message: 'User not found.'});
+            if (!dbPost) { // user doesnt exist
+                res.send(404, {success: false, message: 'Image not found.'});
                 return next();
             }
 
-            if (!!editUser.username && editUser.username !== dbUser.username) {
-                dbUser.username = editUser.username;
-                return next();
-            }
+            var savePost = dbPost;
 
-            if (!!editUser.newPassword && editUser.newPassword !== "") {
-                pwdMgr.comparePassword(editUser.oldPassword, dbUser.password, function (err, isPasswordMatch) {
- 
-                    if (isPasswordMatch) {                    
-                        dbUser.password = editUser.newPassword;
-                        res.send(200, { message: "Password changed!" });
-                    } else {
-                        res.send(403, { message: "Authentication failed. Wrong password." });
-                    }
-     
-                });
-            }
+            if (!!editPost.caption) {
+                savePost.caption = editPost.caption; 
+            };
 
-            if (!!editUser.avatar) {
-                dbUser.avatar = editUser.avatar;
-            }
-
-            db.users.update({ _id: req.reqUser._id }, function (err, dbUser) {
+            db.posts.update({ _id: mongojs.ObjectId(req.params.id) }, savePost, function (err, dbPost2) {
                 if (err) throw err;
-                res.send(200, { message: 'Profile updated!' });
+                res.send(200, { success: true, message: 'Post updated!' });
             });
-            
         });
-
         return next();
     });
 
     // delete post
     server.del('/api/post/:id', authentication, function (req, res, next) {
-        db.users.findOne({ _id: req.reqUser._id }, function (err, dbUser) {
+        db.posts.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbPost) {
             if (err) throw err;
 
-            if (!dbUser) { // user doesnt exist
-                res.send(404, {success: false, message: 'User not found.'});
+            if (!dbPost) { // user doesnt exist
+                res.send(404, {success: false, message: 'Image not found.'});
                 return next();
             }
 
-            res.send(200, dbUser);
+            db.posts.remove({ _id: mongojs.ObjectId(req.params.id) }, function (err) {
+                if (err) throw err;
+                res.send(200, { success:true, message: 'Post deleted!' });
+            });
         });
-
         return next();
     });
 };

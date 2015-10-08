@@ -140,7 +140,6 @@ module.exports = function(server, db) {
 
             if (!!editUser.username && editUser.username !== dbUser.username) {
                 saveUser.username = editUser.username;
-                console.log(saveUser.username);
             }
 
             if (!!editUser.newPassword && editUser.newPassword !== "") {
@@ -161,7 +160,7 @@ module.exports = function(server, db) {
                 saveUser.avatar = editUser.avatar;
             }
 
-            db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, dbUser) {
+            db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, dbUser2) {
                 if (err) throw err;
                 res.send(200, { message: 'Profile updated!' });
             });
