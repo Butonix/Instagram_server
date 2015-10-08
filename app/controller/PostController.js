@@ -7,8 +7,10 @@ var mongojs         = require('mongojs');
 module.exports = function(server, db) {
 
     // readAll
-    server.get('/api/post/all', authentication, function (req, res, next) {
-        db.posts.find({ $oderby: { createdTime: -1 } }, function (err, dbPost) {
+    server.get('/api/post/all', function (req, res, next) {
+        db.posts.find()
+                .sort({ createdTime: -1 },
+                function (err, dbPost) {
             res.send(200, dbPost);
         });
         return next();
@@ -16,7 +18,19 @@ module.exports = function(server, db) {
 
     // readAll - user
     server.get('/api/post/user/:id', authentication, function (req, res, next) {
-        db.posts.find({ $query: {user_id: req.params.id}, $orderby: { createdTime: -1 } }, function (err, dbPost) {
+        db.posts.find({ user_id: req.params.id })
+                .sort({ createdTime: -1 },
+                function (err, dbPost) {
+            res.send(200, dbPost);
+        });
+        return next();
+    });
+
+    // readAll - reqUser
+    server.get('/api/post', authentication, function (req, res, next) {
+        db.posts.find({ user_id: req.reqUser._id })
+                .sort({ createdTime: -1 },
+                function (err, dbPost) {
             res.send(200, dbPost);
         });
         return next();
