@@ -14,11 +14,11 @@ server.use(morgan('dev')); // LOGGER
 server.use(function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-type, Authorization, x-access-token');
+    res.header('Access-Control-Allow-Headers', 'Content-type, x-access-token');
     next();
 });
 
-server.opts(/\.*/, function (req, res, next) {
+server.opts(/\.*/, function (reqgit, res, next) {
     res.send(200);
     return next();
 });
