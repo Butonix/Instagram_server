@@ -1,6 +1,6 @@
-var pwdMgr          = require('../middleware/password');
+var pwdMgr          = require('../lib/password');
 var config          = require('../config');
-var authentication  = require('../middleware/authentication');
+var authentication  = require('../lib/authentication');
 var jwt             = require('jsonwebtoken');
 var mongojs         = require('mongojs');
  
@@ -35,7 +35,7 @@ module.exports = function(server, db) {
  
                 if (isPasswordMatch) {                    
                     var token = jwt.sign(dbUser, config.secret, {
-                        expiresIn: 1440 // expires in 24 hours
+                        expiresInMinutes: 1440 // expires in 24 hours
                     });
 
                     res.send(200, { token: token, message: "Login successfully!" });
@@ -77,6 +77,8 @@ module.exports = function(server, db) {
                 // set default value
                 user.username = "Instagram User";
                 user.avatar = "";
+                user.followers = [];
+                user.followings = [];
 
                 db.users.insert(user, function (err, dbUser2) {
                     if (err) { // duplicate key error
@@ -132,7 +134,7 @@ module.exports = function(server, db) {
             if (err) throw err;
 
             if (!dbUser) { // user doesnt exist
-                res.send(403, {success: false, message: 'User not found.'});
+                res.send(404, {success: false, message: 'User not found.'});
                 return next();
             }
 
@@ -169,4 +171,136 @@ module.exports = function(server, db) {
 
         return next();
     });
+
+    // see followers list
+    server.get('/api/followers', authentication, function (req, res, next) {
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
+            if (err) throw err;
+            res.send(200, dbUser.followers);
+        });
+        return next();
+    });
+
+    // see followees list
+    server.get('/api/followings', authentication, function (req, res, next) {
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
+            if (err) throw err;
+            res.send(200, dbUser.followings);
+        });
+        return next();
+    });
+
+    // see followers list - other
+    server.get('/api/followers/user/:id', authentication, function (req, res, next) {
+        db.users.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
+            res.send(200, dbUser.followers);
+        });
+        return next();
+    });
+
+    // see followees list - other
+    server.get('/api/followings/user/:id', authentication, function (req, res, next) {
+        db.users.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
+            res.send(200, dbUser.followings);
+        });
+        return next();
+    });
+
+    // Check follow
+    server.post('/api/follow/user/:id', authentication, function (req, res, next) {
+        db.users.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+            var saveUser = dbUser;
+            saveUser.followers.push(req.reqUser._id);
+            db.users.update({ _id: mongojs.ObjectId(req.params.id) }, saveUser, function (err) {
+                if (err) throw err;
+            });
+        });
+
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
+            var saveUser = dbUser;
+            saveUser.followings.push(req.params.id);
+
+            db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err) {
+                if (err) throw err;
+                res.send(200, { success: true, message: 'Add followings successfully!' });
+            });
+        });
+        return next();
+    });
+
+    // UnCheck follow
+    server.put('/api/follow/user/:id', authentication, function (req, res, next) {
+        db.users.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
+            var saveUser = dbUser;
+            saveUser.followers.splice(saveUser.followers.indexOf(req.reqUser._id), 1);
+
+            db.users.update({ _id: mongojs.ObjectId(req.params.id) }, saveUser, function (err) {
+                if (err) throw err;
+            });
+        });
+
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
+            var saveUser = dbUser;
+            saveUser.followings.splice(saveUser.followings.indexOf(req.params.id), 1);
+            console.log(saveUser);
+
+            db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err) {
+                if (err) throw err;
+                res.send(200, { success: true, message: 'Remove followings successfully!' });
+            });
+        });
+        return next();
+    });
+
+    // delete post
+    // server.del('/api/user/all', function (req, res, next) {
+
+    //         db.users.remove(function (err) {
+    //             console.log("delete all user");
+    //             res.send({message: "delete"});
+    //         });
+
+    //     return next();
+    // });
 };

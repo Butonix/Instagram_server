@@ -1,6 +1,6 @@
-var pwdMgr          = require('../middleware/password');
+var pwdMgr          = require('../lib/password');
 var config          = require('../config');
-var authentication  = require('../middleware/authentication');
+var authentication  = require('../lib/authentication');
 var jwt             = require('jsonwebtoken');
 var mongojs         = require('mongojs');
  

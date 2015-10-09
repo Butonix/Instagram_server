@@ -1,6 +1,6 @@
-var pwdMgr          = require('../middleware/password');
+var pwdMgr          = require('../lib/password');
 var config          = require('../config');
-var authentication  = require('../middleware/authentication');
+var authentication  = require('../lib/authentication');
 var jwt             = require('jsonwebtoken');
 var mongojs         = require('mongojs');
  
@@ -108,7 +108,7 @@ module.exports = function(server, db) {
 
             db.posts.remove({ _id: mongojs.ObjectId(req.params.id) }, function (err) {
                 if (err) throw err;
-                res.send(200, { success:true, message: 'Post deleted!' });
+                res.send(200, { success: true, message: 'Post deleted!' });
             });
         });
         return next();
