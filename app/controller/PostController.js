@@ -46,6 +46,8 @@ module.exports = function(server, db) {
         }
 
         newPost.user_id = req.reqUser._id;
+        newPost.caption = "";
+        newPost.likes   = [];
         
         db.posts.insert(newPost, function (err, dbPost) {
             if (err) throw err;
@@ -109,6 +111,48 @@ module.exports = function(server, db) {
             db.posts.remove({ _id: mongojs.ObjectId(req.params.id) }, function (err) {
                 if (err) throw err;
                 res.send(200, { success: true, message: 'Post deleted!' });
+            });
+        });
+        return next();
+    });
+
+    //like post
+    server.post('/api/like/post/:id', authentication, function (req, res, next) {
+        db.posts.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbPost) {
+            if (err) throw err;
+
+            if (!dbPost) {
+                res.send(404, { message: "Image not found!" });
+                return next();
+            }
+
+            var savePost = dbPost;
+            savePost.likes.push(req.reqUser._id);
+
+            db.posts.update({ _id: mongojs.ObjectId(req.params.id) }, savePost, function (err) {
+                if (err) throw err;
+                res.send(200, { success: true, message: 'Like post successfully!' });
+            });
+        });
+        return next();
+    });
+
+    // Unlike
+    server.put('/api/like/post/:id', authentication, function (req, res, next) {
+        db.posts.findOne({ _id: mongojs.ObjectId(req.params.id) }, function (err, dbPost) {
+            if (err) throw err;
+
+            if (!dbPost) {
+                res.send(404, { message: "Image not found!" });
+                return next();
+            }
+
+            var savePost = dbPost;
+            savePost.likes.splice(savePost.likes.indexOf(req.reqUser._id), 1);
+
+            db.posts.update({ _id: mongojs.ObjectId(req.params.id) }, savePost, function (err) {
+                if (err) throw err;
+                res.send(200, { success: true, message: 'Unlike post successfully!' });
             });
         });
         return next();

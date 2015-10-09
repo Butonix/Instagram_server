@@ -229,6 +229,7 @@ module.exports = function(server, db) {
                 res.send(404, { message: "User not found!" });
                 return next();
             }
+
             var saveUser = dbUser;
             saveUser.followers.push(req.reqUser._id);
             db.users.update({ _id: mongojs.ObjectId(req.params.id) }, saveUser, function (err) {
@@ -245,8 +246,7 @@ module.exports = function(server, db) {
             }
 
             var saveUser = dbUser;
-            saveUser.followings.push(req.params.id);
-
+            saveUser.followings.push(req.params.id);            
             db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err) {
                 if (err) throw err;
                 res.send(200, { success: true, message: 'Add followings successfully!' });
@@ -267,7 +267,6 @@ module.exports = function(server, db) {
 
             var saveUser = dbUser;
             saveUser.followers.splice(saveUser.followers.indexOf(req.reqUser._id), 1);
-
             db.users.update({ _id: mongojs.ObjectId(req.params.id) }, saveUser, function (err) {
                 if (err) throw err;
             });
@@ -283,8 +282,6 @@ module.exports = function(server, db) {
 
             var saveUser = dbUser;
             saveUser.followings.splice(saveUser.followings.indexOf(req.params.id), 1);
-            console.log(saveUser);
-
             db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err) {
                 if (err) throw err;
                 res.send(200, { success: true, message: 'Remove followings successfully!' });
