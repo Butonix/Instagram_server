@@ -18,7 +18,7 @@ server.use(function(req, res, next) {
     next();
 });
 
-server.opts(/\.*/, function (reqgit, res, next) {
+server.opts(/\.*/, function (req, res, next) {
     res.send(200);
     return next();
 });
