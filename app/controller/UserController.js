@@ -18,7 +18,7 @@ module.exports = function(server, db) {
     server.post('/api/user/auth', function (req, res, next) {
         var user = req.params;
 
-        if (user.email.length === 0 || user.password.length === 0) {
+        if (user.email.trim().length === 0 || user.password.trim().length === 0) {
             res.send(403, { message: "Invalid Credentials" });
             return next();
         }
@@ -57,7 +57,7 @@ module.exports = function(server, db) {
     server.post('/api/user/', function (req, res, next) {
         var user = req.params;
 
-        if (user.email.length === 0 || user.password.length === 0) {
+        if (user.email.trim().length === 0 || user.password.trim().length === 0) {
             res.send(403, { message: 'Username or password hasn\'t been input.' });
             return next();
         }

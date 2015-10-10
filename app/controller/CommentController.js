@@ -17,7 +17,7 @@ module.exports = function(server, db) {
     });
 
     // readAll - post
-    server.get('/api/post/:id/comment', authentication, function (req, res, next) {
+    server.get('/api/comment/post/:id', authentication, function (req, res, next) {
         db.comments.find({ post_id: req.params.id })
                    .sort({ createdTime: 1 },
                     function (err, dbComment) {
@@ -27,7 +27,7 @@ module.exports = function(server, db) {
     });
 
     // create
-    server.post('/api/post/:id/comment', authentication, function (req, res, next) {
+    server.post('/api/comment/post/:id', authentication, function (req, res, next) {
         var newComment = req.params;
         newComment.post_id = req.params.id;
         newComment.user_id = req.reqUser._id;
