@@ -16,6 +16,17 @@ module.exports = function(server, db) {
         return next();
     });
 
+    //     // delete all
+    server.del('/api/post/all', function (req, res, next) {
+            console.log('got request');
+            db.posts.remove(function (err) {
+                console.log("delete all post");
+                res.send({message: "delete"});
+            });
+
+        return next();
+    });
+
     // readAll - user
     server.get('/api/post/user/:id', authentication, function (req, res, next) {
         db.posts.find({ user_id: req.params.id })
@@ -36,6 +47,31 @@ module.exports = function(server, db) {
         return next();
     });
 
+    // read Newfeeds
+    server.get('/api/post/newfeeds', authentication, function (req, res, next) {
+        var userfeeds = [];
+
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
+            userfeeds = dbUser.followings;
+            userfeeds.push(req.reqUser._id); 
+
+            db.posts.find({ user_id: {$in: userfeeds} })
+                    .sort({ createdTime: -1 },
+                    function (err, dbPost) {                
+                if (err) throw err;
+                res.send(200, dbPost);
+            });
+        });
+        return next();
+    });
+
     // create
     server.post('/api/post', authentication, function (req, res, next) {
         var newPost = req.params;
@@ -45,8 +81,11 @@ module.exports = function(server, db) {
             return next();
         }
 
+        if (!newPost.caption) {
+            newPost.caption = "";
+        }
+
         newPost.user_id = req.reqUser._id;
-        newPost.caption = "";
         newPost.likes   = [];
         
         db.posts.insert(newPost, function (err, dbPost) {
@@ -157,4 +196,5 @@ module.exports = function(server, db) {
         });
         return next();
     });
+
 };
