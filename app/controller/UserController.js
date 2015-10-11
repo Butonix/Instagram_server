@@ -18,8 +18,8 @@ module.exports = function(server, db) {
     server.post('/api/user/auth', function (req, res, next) {
         var user = req.params;
 
-        if (user.email.trim().length === 0 || user.password.trim().length === 0) {
-            res.send(403, { message: "Invalid Credentials" });
+        if (user.email.length === 0 || user.password.length === 0) {
+            res.send(403, { message: 'Username or password hasn\'t been input.' });
             return next();
         }
 
@@ -38,7 +38,7 @@ module.exports = function(server, db) {
                         expiresInMinutes: 1440 // expires in 24 hours
                     });
 
-                    res.send(200, { token: token, message: "Login successfully!" });
+                    res.send(200, { token: token, message: "Login successfully!", user: dbUser });
                 } else {
                     res.send(300, { message: "Authentication failed. Wrong password." });
                 }
@@ -48,16 +48,12 @@ module.exports = function(server, db) {
         return next();
     });
 
-    // log out
-    server.post('/api/user/auth', function (req, res, next) {
-        // var user = req.params;
-    });
  
     // create
     server.post('/api/user/', function (req, res, next) {
         var user = req.params;
 
-        if (user.email.trim().length === 0 || user.password.trim().length === 0) {
+        if (user.email.length === 0 || user.password.length === 0) {
             res.send(403, { message: 'Username or password hasn\'t been input.' });
             return next();
         }

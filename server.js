@@ -12,10 +12,10 @@ server.use(morgan('dev')); // LOGGER
 
 // CORS
 server.use(function(req, res, next) {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
     res.header('Access-Control-Allow-Headers', 'Content-type, x-access-token');
-    next();
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Origin', '*');
+    return next();
 });
 
 server.opts(/\.*/, function (req, res, next) {
@@ -23,7 +23,6 @@ server.opts(/\.*/, function (req, res, next) {
     return next();
 });
 
-// var users   = require('./app/controller/UserController')(server, db);
 route(server, db);
 
 server.listen(process.env.PORT || 3000, function () {
