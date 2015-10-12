@@ -33,11 +33,20 @@ module.exports = function(server, db) {
                    .sort({ createdTime: 1 },
                     function (err, dbComment) {
             var sendComments = [];
+
+            if (err) throw err;
+
+            if (!!dbComment) {
+                res.send(200, sendComments);
+                return next();
+            }
+
             var countTask = dbComment.length;
             function onComplete() {
                 countTask--;
 
                 if (countTask <= 0) {
+                    console.log('sendComments');
                     console.log(sendComments);
                     res.send(200, sendComments);
                     callback();
@@ -66,6 +75,10 @@ module.exports = function(server, db) {
         newComment.user_id = req.reqUser._id;
         newComment.post_id = req.params.id;
         newComment.text    = req.params.text;
+
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
+            newComment.username = dbUser.username;
+        });
         
         db.comments.insert(newComment, function (err, dbComment) {
             if (err) throw err;
