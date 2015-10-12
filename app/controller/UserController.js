@@ -51,12 +51,14 @@ module.exports = function(server, db) {
     // check Authenticate
     server.get('/api/user/auth', authentication, function (req, res, next) {
         sendUser = {};
+        sendUser.userid             = req.reqUser._id;
         sendUser.username           = req.reqUser.username;
         sendUser.avatar             = req.reqUser.avatar;
         sendUser.countFollowers     = req.reqUser.followers.length;
         sendUser.countFollowings    = req.reqUser.followings.length;
+        console.log(req.reqUser._id);
 
-        db.posts.find({ user_id: mongojs.ObjectId(req.reqUser._id) }).count(function (err, result) {
+        db.posts.find({ user_id: req.reqUser._id }).count(function (err, result) {
             sendUser.countPosts = result;
             res.send(200, {success: true, message: 'Authenticate successfully!', user: sendUser});
         });
@@ -116,7 +118,18 @@ module.exports = function(server, db) {
                 return next();
             }
 
-            res.send(200, dbUser);
+            var sendUser = {};
+            sendUser.userid             = dbUser._id;
+            sendUser.username           = dbUser.username;
+            sendUser.avatar             = dbUser.avatar;
+            sendUser.countFollowers     = dbUser.followers.length;
+            sendUser.countFollowings    = dbUser.followings.length;
+
+            db.posts.find({ user_id: dbUser._id }).count(function (err, result) {
+                sendUser.countPosts = result;
+                res.send(200, sendUser);
+            });
+
         });
 
         return next();
