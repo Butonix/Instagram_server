@@ -16,7 +16,7 @@ module.exports = function(server, db) {
         return next();
     });
 
-    //     // delete all
+    // delete all
     server.del('/api/post/all', function (req, res, next) {
             console.log('got request');
             db.posts.remove(function (err) {
@@ -32,6 +32,13 @@ module.exports = function(server, db) {
         db.posts.find({ user_id: req.params.id })
                 .sort({ createdTime: -1 },
                 function (err, dbPost) {
+            if (err) throw err;
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
             res.send(200, dbPost);
         });
         return next();
@@ -43,6 +50,7 @@ module.exports = function(server, db) {
                 .sort({ createdTime: -1 },
                 function (err, dbPost) {
             res.send(200, dbPost);
+            console.log(dbPost);
         });
         return next();
     });
@@ -60,11 +68,11 @@ module.exports = function(server, db) {
             }
 
             userfeeds = dbUser.followings;
-            userfeeds.push(req.reqUser._id); 
+            userfeeds.push(req.reqUser._id);
 
             db.posts.find({ user_id: {$in: userfeeds} })
                     .sort({ createdTime: -1 },
-                    function (err, dbPost) {                
+                    function (err, dbPost) {
                 if (err) throw err;
                 res.send(200, dbPost);
             });

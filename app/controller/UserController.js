@@ -48,6 +48,22 @@ module.exports = function(server, db) {
         return next();
     });
 
+    // check Authenticate
+    server.get('/api/user/auth', authentication, function (req, res, next) {
+        sendUser = {};
+        sendUser.username           = req.reqUser.username;
+        sendUser.avatar             = req.reqUser.avatar;
+        sendUser.countFollowers     = req.reqUser.followers.length;
+        sendUser.countFollowings    = req.reqUser.followings.length;
+
+        db.posts.find({ user_id: mongojs.ObjectId(req.reqUser._id) }).count(function (err, result) {
+            sendUser.countPosts = result;
+            res.send(200, {success: true, message: 'Authenticate successfully!', user: sendUser});
+        });
+
+        return next();
+    });
+
  
     // create
     server.post('/api/user/', function (req, res, next) {
