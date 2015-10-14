@@ -40,7 +40,22 @@ module.exports = function(server, db) {
                         expiresInMinutes: 1440 // expires in 24 hours
                     });
 
-                    res.send(200, { token: token, message: "Login successfully!", user: {username: dbUser.username} });
+                    var sendUser = {
+                        userid: dbUser._id,
+                        username: dbUser.username,
+                        email: dbUser.email,
+                        avatar: dbUser.avatar,
+                        countFollowers: dbUser.followers.length,
+                        countFollowings: dbUser.followings.length,
+                        followings: dbUser.followings,
+                        followers: dbUser.followers
+                    };
+
+                    db.posts.find({ user_id: dbUser._id }).count(function (err, result) {
+                        sendUser.countPosts = result;
+                        res.send(200, {success: true, token: token, message: 'Login successfully!', user: sendUser});
+                    });
+
                 } else {
                     res.send(300, { message: "Authentication failed. Wrong password." });
                 }
@@ -61,7 +76,7 @@ module.exports = function(server, db) {
                 return next();
             }
 
-            sendUser = {
+            var sendUser = {
                 userid: dbUser._id,
                 username: dbUser.username,
                 email: dbUser.email,
@@ -106,7 +121,7 @@ module.exports = function(server, db) {
 
                 // set default value
                 user.username = "Instagram User";
-                user.avatar = "";
+                user.avatar = "http://res.cloudinary.com/hoakusa/image/upload/v1444861152/default_avatar_nwif1n.png";
                 user.followers = [];
                 user.followings = [];
 
@@ -200,11 +215,11 @@ module.exports = function(server, db) {
                 });
             }
 
-            // if (!!req.files.image) {
-            //     cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
-            //         saveUser.avatar = dbFile.url;
-            //     });
-            // }
+            if (!!req.files.image) {
+                cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
+                    saveUser.avatar = dbFile.url;
+                });
+            }
 
             db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, update) {
 
