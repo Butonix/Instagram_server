@@ -3,8 +3,11 @@ var config          = require('../config');
 var authentication  = require('../lib/authentication');
 var jwt             = require('jsonwebtoken');
 var mongojs         = require('mongojs');
+var cloudinary      = require('cloudinary');
  
 module.exports = function(server, db) {
+
+    cloudinary.config(config.cloudinary);
 
     // readAll
     server.get('/api/post/all', function (req, res, next) {
@@ -32,14 +35,42 @@ module.exports = function(server, db) {
         db.posts.find({ user_id: req.params.id })
                 .sort({ createdTime: -1 },
                 function (err, dbPost) {
+
+            var sendPosts = [];
+
             if (err) throw err;
 
-            if (!dbUser) {
-                res.send(404, { message: "User not found!" });
+            if (!dbPost || dbPost.length == 0) {
+                res.send(200, sendPosts);
                 return next();
             }
 
-            res.send(200, dbPost);
+            var countTask = dbPost.length;
+
+            function onComplete() {
+                countTask--;
+
+                if (countTask <= 0) {
+                    console.log(sendPosts);
+                    res.send(200, sendPosts);
+                    callback();
+                };
+            }
+
+            for (var i = 0; i < dbPost.length; i++) {
+                (function(j) {
+                    var post = {
+                        id: dbPost[j]._id,
+                        userid: dbPost[j].user_id,
+                        image: dbPost[j].image,
+                        caption: dbPost[j].caption,
+                        likes: dbPost[j].likes
+                    };
+
+                    sendPosts.push(post);
+                    onComplete();
+                }(i));
+            }
         });
         return next();
     });
@@ -49,8 +80,41 @@ module.exports = function(server, db) {
         db.posts.find({ user_id: req.reqUser._id })
                 .sort({ createdTime: -1 },
                 function (err, dbPost) {
-            res.send(200, dbPost);
-            console.log(dbPost);
+            var sendPosts = [];
+
+            if (err) throw err;
+
+            if (!dbPost || dbPost.length == 0) {
+                res.send(200, sendPosts);
+                return next();
+            }
+
+            var countTask = dbPost.length;
+
+            function onComplete() {
+                countTask--;
+
+                if (countTask <= 0) {
+                    console.log(sendPosts);
+                    res.send(200, sendPosts);
+                    callback();
+                };
+            }
+
+            for (var i = 0; i < dbPost.length; i++) {
+                (function(j) {
+                    var post = {
+                        id: dbPost[j]._id,
+                        userid: dbPost[j].user_id,
+                        image: dbPost[j].image,
+                        caption: dbPost[j].caption,
+                        likes: dbPost[j].likes
+                    };
+
+                    sendPosts.push(post);
+                    onComplete();
+                }(i));
+            }
         });
         return next();
     });
@@ -73,8 +137,45 @@ module.exports = function(server, db) {
             db.posts.find({ user_id: {$in: userfeeds} })
                     .sort({ createdTime: -1 },
                     function (err, dbPost) {
+
+                var sendPost = [];
                 if (err) throw err;
-                res.send(200, dbPost);
+
+                if (!dbPost || dbPost.length == 0) {
+                    res.send(200, sendPost);
+                    return next();
+                }
+
+                var countTask = dbPost.length;
+                function onComplete() {
+                    countTask--;
+
+                    if (countTask <= 0) {
+                        res.send(200, sendPost);
+                        callback();
+                    };
+                }
+
+                for (var i = 0; i < dbPost.length; i++) {
+                    (function(j) {
+                        var post = {};
+
+                        post.id = dbPost[j]._id;
+                        post.image = dbPost[j].image;
+                        post.caption = dbPost[j].caption;
+                        post.likes = dbPost[j].likes;
+
+                        db.users.findOne({ _id: mongojs.ObjectId(dbPost[j].user_id) }, function (err, dbUser) {
+                            post.user = {};
+                            post.user.userid = dbUser._id;
+                            post.user.username = dbUser.username;
+                            post.user.avatar = dbUser.avatar;
+
+                            sendPost.push(post);
+                            onComplete();
+                        });
+                    }(i));
+                }
             });
         });
         return next();
@@ -95,6 +196,10 @@ module.exports = function(server, db) {
 
         newPost.user_id = req.reqUser._id;
         newPost.likes   = [];
+
+        cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
+            newPost.image = dbFile.url;
+        });
         
         db.posts.insert(newPost, function (err, dbPost) {
             if (err) throw err;

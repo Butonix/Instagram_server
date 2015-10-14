@@ -33,37 +33,15 @@ module.exports = function(server, db) {
                    .sort({ createdTime: 1 },
                     function (err, dbComment) {
             var sendComments = [];
-
             if (err) throw err;
 
-            if (!!dbComment) {
+            if (!dbComment || dbComment.length == 0) {
+                console.log("no comment to show");
                 res.send(200, sendComments);
                 return next();
             }
-
-            var countTask = dbComment.length;
-            function onComplete() {
-                countTask--;
-
-                if (countTask <= 0) {
-                    console.log('sendComments');
-                    console.log(sendComments);
-                    res.send(200, sendComments);
-                    callback();
-                };
-            }
-
-            for (var i = 0; i < dbComment.length; i++) {
-                (function(j) {
-                    var comment = {};
-                    comment.text = dbComment[j].text;
-                    db.users.findOne({ _id: mongojs.ObjectId(dbComment[j].user_id) }, function (err, dbUser) {
-                        comment.username = dbUser.username;
-                        sendComments.push(comment);
-                        onComplete();
-                    });
-                }(i));
-            }
+            
+            res.send(200, dbComment);
 
         });
         return next();
@@ -73,12 +51,9 @@ module.exports = function(server, db) {
     server.post('/api/comment/post/:id', authentication, function (req, res, next) {
         var newComment = {};
         newComment.user_id = req.reqUser._id;
+        newComment.username = req.reqUser.username;
         newComment.post_id = req.params.id;
         newComment.text    = req.params.text;
-
-        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
-            newComment.username = dbUser.username;
-        });
         
         db.comments.insert(newComment, function (err, dbComment) {
             if (err) throw err;

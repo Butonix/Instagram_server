@@ -4,6 +4,7 @@ var morgan  = require('morgan');
 var db      = mongojs('instagramdb', ['users', 'posts', 'comments']);
 var server  = restify.createServer();
 var route   = require('./app/route');
+var cloudinary = require('cloudinary');
 
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());

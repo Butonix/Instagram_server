@@ -3,8 +3,10 @@ var config          = require('../config');
 var authentication  = require('../lib/authentication');
 var jwt             = require('jsonwebtoken');
 var mongojs         = require('mongojs');
+var cloudinary      = require('cloudinary');
  
 module.exports = function(server, db) {
+    cloudinary.config(config.cloudinary);
 
     // readAll
     server.get('/api/user/all', function (req, res, next) {
@@ -38,7 +40,7 @@ module.exports = function(server, db) {
                         expiresInMinutes: 1440 // expires in 24 hours
                     });
 
-                    res.send(200, { token: token, message: "Login successfully!", user: dbUser });
+                    res.send(200, { token: token, message: "Login successfully!", user: {username: dbUser.username} });
                 } else {
                     res.send(300, { message: "Authentication failed. Wrong password." });
                 }
@@ -56,7 +58,6 @@ module.exports = function(server, db) {
         sendUser.avatar             = req.reqUser.avatar;
         sendUser.countFollowers     = req.reqUser.followers.length;
         sendUser.countFollowings    = req.reqUser.followings.length;
-        console.log(req.reqUser._id);
 
         db.posts.find({ user_id: req.reqUser._id }).count(function (err, result) {
             sendUser.countPosts = result;
@@ -183,13 +184,19 @@ module.exports = function(server, db) {
                 });
             }
 
-            if (!!editUser.avatar) {
-                saveUser.avatar = editUser.avatar;
+            if (!!req.files.image) {
+                cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
+                    editUser.avatar = dbFile.url;
+                });
             }
 
             db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, dbUser2) {
                 if (err) throw err;
-                res.send(200, { message: 'Profile updated!' });
+                var sendUser = {};
+                sendUser.userid         = req.reqUser._id;
+                sendUser.username       = dbUser.username;
+                sendUser.avatar         = dbUser.avatar;
+                res.send(200, { message: 'Profile updated!', user: sendUser });
             });
             
         });
