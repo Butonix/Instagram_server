@@ -436,6 +436,46 @@ module.exports = function(server, db) {
         return next();
     });
 
+    // Search
+    server.post('/api/search/user', authentication, function (req, res, next) {
+        db.users.find( {$text: {$search: req.params.textSearch}}, function (err, result) {
+            if (err) throw err;
+
+            if (!result || result.length === 0) { // user doesnt exist
+                res.send({status: 205, message: 'User not found!'});
+                return next();
+            }
+
+            var sendUser = [];
+            var countTask = result.length;
+
+            function onComplete() {
+                countTask--;
+
+                if (countTask <= 0) {
+                    res.send(200, sendUser);
+                    callback();
+                };
+            }
+
+            for (var i = 0; i < result.length; i++) {
+                (function(j) {
+                    db.users.findOne({ _id: mongojs.ObjectId(result[j]._id) }, function (err, dbUser) {
+                        var user = {
+                            userid: dbUser._id,
+                            username: dbUser.username,
+                            avatar: dbUser.avatar,
+                            followers: dbUser.followers
+                        };
+                        sendUser.push(user);
+                        onComplete();
+                    });
+                }(i));
+            }
+        });
+        return next();
+    });
+
     // delete post
     // server.del('/api/user/all', function (req, res, next) {
 

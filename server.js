@@ -24,6 +24,8 @@ server.opts(/\.*/, function (req, res, next) {
     return next();
 });
 
+db.users.createIndex({username: 'text'});
+
 route(server, db);
 
 server.listen(process.env.PORT || 3000, function () {
