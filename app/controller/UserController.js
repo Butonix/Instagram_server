@@ -52,16 +52,30 @@ module.exports = function(server, db) {
 
     // check Authenticate
     server.get('/api/user/auth', authentication, function (req, res, next) {
-        sendUser = {};
-        sendUser.userid             = req.reqUser._id;
-        sendUser.username           = req.reqUser.username;
-        sendUser.avatar             = req.reqUser.avatar;
-        sendUser.countFollowers     = req.reqUser.followers.length;
-        sendUser.countFollowings    = req.reqUser.followings.length;
 
-        db.posts.find({ user_id: req.reqUser._id }).count(function (err, result) {
-            sendUser.countPosts = result;
-            res.send(200, {success: true, message: 'Authenticate successfully!', user: sendUser});
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
+            if (err) throw err;
+
+            if (!dbUser) { // user doesnt exist
+                res.send(404, {success: false, message: 'User not found.'});
+                return next();
+            }
+
+            sendUser = {
+                userid: dbUser._id,
+                username: dbUser.username,
+                avatar: dbUser.avatar,
+                countFollowers: dbUser.followers.length,
+                countFollowings: dbUser.followings.length,
+                followings: dbUser.followings,
+                followers: dbUser.followers
+            };
+
+            db.posts.find({ user_id: req.reqUser._id }).count(function (err, result) {
+                sendUser.countPosts = result;
+                res.send(200, {success: true, message: 'Authenticate successfully!', user: sendUser});
+            });
+
         });
 
         return next();
@@ -125,6 +139,7 @@ module.exports = function(server, db) {
             sendUser.avatar             = dbUser.avatar;
             sendUser.countFollowers     = dbUser.followers.length;
             sendUser.countFollowings    = dbUser.followings.length;
+            sendUser.followers          = dbUser.followers;
 
             db.posts.find({ user_id: dbUser._id }).count(function (err, result) {
                 sendUser.countPosts = result;
@@ -208,16 +223,67 @@ module.exports = function(server, db) {
     server.get('/api/followers', authentication, function (req, res, next) {
         db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
             if (err) throw err;
-            res.send(200, dbUser.followers);
+
+            var sendFollow = [];
+            var countTask = dbUser.followers.length;
+            function onComplete() {
+                countTask--;
+
+                if (countTask <= 0) {
+                    res.send(200, sendFollow);
+                    callback();
+                };
+            }
+
+            for (var i = 0; i < dbUser.followers.length; i++) {
+                (function(j) {
+                    db.users.findOne({ _id: mongojs.ObjectId(dbUser.followers[j]) }, function (err, dbUser2) {
+                        var user = {
+                            userid: dbUser2._id,
+                            username: dbUser2.username,
+                            avatar: dbUser2.avatar,
+                            followers: dbUser2.followers,
+                        };
+                        sendFollow.push(user);
+                        onComplete();
+                    });
+                }(i));
+            }
+
         });
         return next();
     });
 
-    // see followees list
+    // see followings list
     server.get('/api/followings', authentication, function (req, res, next) {
         db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
             if (err) throw err;
-            res.send(200, dbUser.followings);
+
+            var sendFollow = [];
+            var countTask = dbUser.followings.length;
+            function onComplete() {
+                countTask--;
+
+                if (countTask <= 0) {
+                    res.send(200, sendFollow);
+                    callback();
+                };
+            }
+
+            for (var i = 0; i < dbUser.followings.length; i++) {
+                (function(j) {
+                    db.users.findOne({ _id: mongojs.ObjectId(dbUser.followings[j]) }, function (err, dbUser2) {
+                        var user = {
+                            userid: dbUser2._id,
+                            username: dbUser2.username,
+                            avatar: dbUser2.avatar,
+                            followers: dbUser2.followers
+                        };
+                        sendFollow.push(user);
+                        onComplete();
+                    });
+                }(i));
+            }
         });
         return next();
     });
@@ -232,7 +298,31 @@ module.exports = function(server, db) {
                 return next();
             }
 
-            res.send(200, dbUser.followers);
+            var sendFollow = [];
+            var countTask = dbUser.followers.length;
+            function onComplete() {
+                countTask--;
+
+                if (countTask <= 0) {
+                    res.send(200, sendFollow);
+                    callback();
+                };
+            }
+
+            for (var i = 0; i < dbUser.followers.length; i++) {
+                (function(j) {
+                    db.users.findOne({ _id: mongojs.ObjectId(dbUser.followers[j]) }, function (err, dbUser2) {
+                        var user = {
+                            userid: dbUser2._id,
+                            username: dbUser2.username,
+                            avatar: dbUser2.avatar,
+                            followers: dbUser2.followers,
+                        };
+                        sendFollow.push(user);
+                        onComplete();
+                    });
+                }(i));
+            }
         });
         return next();
     });
@@ -247,7 +337,31 @@ module.exports = function(server, db) {
                 return next();
             }
 
-            res.send(200, dbUser.followings);
+            var sendFollow = [];
+            var countTask = dbUser.followings.length;
+            function onComplete() {
+                countTask--;
+
+                if (countTask <= 0) {
+                    res.send(200, sendFollow);
+                    callback();
+                };
+            }
+
+            for (var i = 0; i < dbUser.followings.length; i++) {
+                (function(j) {
+                    db.users.findOne({ _id: mongojs.ObjectId(dbUser.followings[j]) }, function (err, dbUser2) {
+                        var user = {
+                            userid: dbUser2._id,
+                            username: dbUser2.username,
+                            avatar: dbUser2.avatar,
+                            followers: dbUser2.followers
+                        };
+                        sendFollow.push(user);
+                        onComplete();
+                    });
+                }(i));
+            }
         });
         return next();
     });
