@@ -64,6 +64,7 @@ module.exports = function(server, db) {
             sendUser = {
                 userid: dbUser._id,
                 username: dbUser.username,
+                email: dbUser.email,
                 avatar: dbUser.avatar,
                 countFollowers: dbUser.followers.length,
                 countFollowings: dbUser.followings.length,
@@ -199,19 +200,32 @@ module.exports = function(server, db) {
                 });
             }
 
-            if (!!req.files.image) {
-                cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
-                    editUser.avatar = dbFile.url;
-                });
-            }
+            // if (!!req.files.image) {
+            //     cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
+            //         saveUser.avatar = dbFile.url;
+            //     });
+            // }
 
-            db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, dbUser2) {
+            db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, update) {
+
                 if (err) throw err;
-                var sendUser = {};
-                sendUser.userid         = req.reqUser._id;
-                sendUser.username       = dbUser.username;
-                sendUser.avatar         = dbUser.avatar;
-                res.send(200, { message: 'Profile updated!', user: sendUser });
+                db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser2) {
+                    var sendUser = {
+                        userid: req.reqUser._id,
+                        username: dbUser2.username,
+                        email: dbUser2.email,
+                        avatar: dbUser2.avatar,
+                        countFollowers: dbUser2.followers.length,
+                        countFollowings: dbUser2.followings.length,
+                        followings: dbUser2.followings,
+                        followers: dbUser2.followers
+                    };
+                    db.posts.find({ user_id: req.reqUser._id }).count(function (err, result) {
+                        sendUser.countPosts = result;
+                        res.send(200, { message: 'Your information has been saved!', user: sendUser });
+                    });
+                })
+                
             });
             
         });

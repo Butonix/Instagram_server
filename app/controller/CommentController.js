@@ -54,6 +54,7 @@ module.exports = function(server, db) {
         newComment.username = req.reqUser.username;
         newComment.post_id = req.params.id;
         newComment.text    = req.params.text;
+        newComment.createdTime = Date.now();
         
         db.comments.insert(newComment, function (err, dbComment) {
             if (err) throw err;

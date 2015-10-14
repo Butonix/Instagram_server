@@ -21,9 +21,7 @@ module.exports = function(server, db) {
 
     // delete all
     server.del('/api/post/all', function (req, res, next) {
-            console.log('got request');
             db.posts.remove(function (err) {
-                console.log("delete all post");
                 res.send({message: "delete"});
             });
 
@@ -51,7 +49,6 @@ module.exports = function(server, db) {
                 countTask--;
 
                 if (countTask <= 0) {
-                    console.log(sendPosts);
                     res.send(200, sendPosts);
                     callback();
                 };
@@ -95,7 +92,6 @@ module.exports = function(server, db) {
                 countTask--;
 
                 if (countTask <= 0) {
-                    console.log(sendPosts);
                     res.send(200, sendPosts);
                     callback();
                 };
@@ -196,6 +192,7 @@ module.exports = function(server, db) {
 
         newPost.user_id = req.reqUser._id;
         newPost.likes   = [];
+        newPost.createdTime = Date.now();
 
         cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
             newPost.image = dbFile.url;
