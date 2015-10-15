@@ -1,7 +1,8 @@
 var restify = require('restify');
 var mongojs = require('mongojs');
 var morgan  = require('morgan');
-var db      = mongojs('instagramdb', ['users', 'posts', 'comments']);
+// var db      = mongojs('instagramdb', ['users', 'posts', 'comments']);
+var db      = mongojs('  mongodb://instagram:1234@ds039271.mongolab.com:39271/instagram', ['users', 'posts', 'comments'], {authMechanism: 'ScramSHA1'});
 var server  = restify.createServer();
 var route   = require('./app/route');
 var cloudinary = require('cloudinary');
