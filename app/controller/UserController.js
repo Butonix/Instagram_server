@@ -51,8 +51,8 @@ module.exports = function(server, db) {
                         followers: dbUser.followers
                     };
 
-                    db.posts.find({ user_id: dbUser._id }).count(function (err, result) {
-                        sendUser.countPosts = result;
+                    db.posts.find({ user_id: dbUser._id }, function (err, result) {
+                        sendUser.countPosts = result.length;
                         res.send(200, {success: true, token: token, message: 'Login successfully!', user: sendUser});
                     });
 
@@ -87,8 +87,8 @@ module.exports = function(server, db) {
                 followers: dbUser.followers
             };
 
-            db.posts.find({ user_id: req.reqUser._id }).count(function (err, result) {
-                sendUser.countPosts = result;
+            db.posts.find({ user_id: req.reqUser._id }, function (err, result) {
+                sendUser.countPosts = result.length;
                 res.send(200, {success: true, message: 'Authenticate successfully!', user: sendUser});
             });
 
@@ -157,8 +157,10 @@ module.exports = function(server, db) {
             sendUser.countFollowings    = dbUser.followings.length;
             sendUser.followers          = dbUser.followers;
 
-            db.posts.find({ user_id: dbUser._id }).count(function (err, result) {
-                sendUser.countPosts = result;
+            db.posts.find({ user_id: req.params.id }, function (err, result) {
+                console.log(result);
+                sendUser.countPosts = result.length;
+                console.log(sendUser);
                 res.send(200, sendUser);
             });
 
@@ -235,8 +237,8 @@ module.exports = function(server, db) {
                         followings: dbUser2.followings,
                         followers: dbUser2.followers
                     };
-                    db.posts.find({ user_id: req.reqUser._id }).count(function (err, result) {
-                        sendUser.countPosts = result;
+                    db.posts.find({ user_id: req.reqUser._id }, function (err, result) {
+                        sendUser.countPosts = result.length;
                         res.send(200, { message: 'Your information has been saved!', user: sendUser });
                     });
                 })
