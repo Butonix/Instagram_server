@@ -147,6 +147,7 @@ module.exports = function(server, db) {
                     countTask--;
 
                     if (countTask <= 0) {
+
                         res.send(200, sendPost);
                         callback();
                     };
@@ -154,19 +155,25 @@ module.exports = function(server, db) {
 
                 for (var i = 0; i < dbPost.length; i++) {
                     (function(j) {
+
                         var post = {};
 
                         post.id = dbPost[j]._id;
                         post.image = dbPost[j].image;
                         post.caption = dbPost[j].caption;
                         post.likes = dbPost[j].likes;
-
+                        post.createdTime = dbPost[j].createdTime;
+                        // console.log(dbPost[j]);
+                        console.log(post);
+                        
                         db.users.findOne({ _id: mongojs.ObjectId(dbPost[j].user_id) }, function (err, dbUser) {
+                            console.log(j);
                             post.user = {};
                             post.user.userid = dbUser._id;
                             post.user.username = dbUser.username;
                             post.user.avatar = dbUser.avatar;
-
+                            console.log('post2');
+                            console.log(post);
                             sendPost.push(post);
                             onComplete();
                         });

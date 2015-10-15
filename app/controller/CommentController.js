@@ -49,17 +49,28 @@ module.exports = function(server, db) {
 
     // create
     server.post('/api/comment/post/:id', authentication, function (req, res, next) {
+        console.log(req.reqUser.username);
         var newComment = {};
         newComment.user_id = req.reqUser._id;
-        newComment.username = req.reqUser.username;
         newComment.post_id = req.params.id;
         newComment.text    = req.params.text;
         newComment.createdTime = Date.now();
-        
-        db.comments.insert(newComment, function (err, dbComment) {
+
+        db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser) {
             if (err) throw err;
-            res.send(200, { message: 'Commented successfully!', comment: dbComment});
+
+            if (!dbUser) {
+                res.send(404, { message: "User not found!" });
+                return next();
+            }
+
+            newComment.username = dbUser.username;
+            db.comments.insert(newComment, function (err, dbComment) {
+                if (err) throw err;
+                res.send(200, { message: 'Commented successfully!', comment: dbComment});
+            })
         })
+        
         return next();
     });
 

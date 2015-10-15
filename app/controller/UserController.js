@@ -215,11 +215,11 @@ module.exports = function(server, db) {
                 });
             }
 
-            if (!!req.files.image) {
-                cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
-                    saveUser.avatar = dbFile.url;
-                });
-            }
+            // if (!!req.files &&!!req.files.image) {
+            //     cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
+            //         saveUser.avatar = dbFile.url;
+            //     });
+            // }
 
             db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, update) {
 
@@ -506,13 +506,13 @@ module.exports = function(server, db) {
     });
 
     // delete post
-    // server.del('/api/user/all', function (req, res, next) {
+    server.del('/api/user/all', function (req, res, next) {
 
-    //         db.users.remove(function (err) {
-    //             console.log("delete all user");
-    //             res.send({message: "delete"});
-    //         });
+            db.users.remove(function (err) {
+                console.log("delete all user");
+                res.send({message: "delete"});
+            });
 
-    //     return next();
-    // });
+        return next();
+    });
 };
