@@ -181,7 +181,7 @@ module.exports = function(server, db) {
     server.post('/api/post', authentication, function (req, res, next) {
         var newPost = req.params;
 
-        if (!newPost.image) {
+        if (!req.files || !req.files.image) {
             res.send(403, { message: 'Upload image failed!' });
             return next();
         }
@@ -196,13 +196,13 @@ module.exports = function(server, db) {
 
         cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
             newPost.image = dbFile.url;
+
+            db.posts.insert(newPost, function (err, dbPost) {
+                if (err) throw err;
+                res.send(200, { message: 'New file uploaded!', post: dbPost });
+            })
+            return next();
         });
-        
-        db.posts.insert(newPost, function (err, dbPost) {
-            if (err) throw err;
-            res.send(200, { message: 'New file uploaded!', post: dbPost });
-        })
-        return next();
     });
 
     // read post
