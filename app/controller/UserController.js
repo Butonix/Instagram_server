@@ -51,7 +51,7 @@ module.exports = function(server, db) {
                         followers: dbUser.followers
                     };
 
-                    db.posts.find({ user_id: dbUser._id }, function (err, result) {
+                    db.posts.find({ user_id: mongojs.ObjectId(dbUser._id).toString() }, function (err, result) {
                         sendUser.countPosts = result.length;
                         res.send(200, {success: true, token: token, message: 'Login successfully!', user: sendUser});
                     });
@@ -117,7 +117,6 @@ module.exports = function(server, db) {
 
             pwdMgr.cryptPassword(user.password, function (err, hash) {
                 user.password = hash;
-                console.log("n", hash);
 
                 // set default value
                 user.username = "Instagram User";
@@ -158,9 +157,7 @@ module.exports = function(server, db) {
             sendUser.followers          = dbUser.followers;
 
             db.posts.find({ user_id: req.params.id }, function (err, result) {
-                console.log(result);
                 sendUser.countPosts = result.length;
-                console.log(sendUser);
                 res.send(200, sendUser);
             });
 
@@ -199,16 +196,50 @@ module.exports = function(server, db) {
 
             var saveUser = dbUser;
 
+
+
+            // if (!!req.files &&!!req.files.image) {
+            //     cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
+            //         saveUser.avatar = dbFile.url;
+            //     });
+            // }
+            var save = function() {
+                db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, update) {
+
+                    if (err) throw err;
+                    db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser2) {
+                        var sendUser = {
+                            userid: req.reqUser._id,
+                            username: dbUser2.username,
+                            email: dbUser2.email,
+                            avatar: dbUser2.avatar,
+                            countFollowers: dbUser2.followers.length,
+                            countFollowings: dbUser2.followings.length,
+                            followings: dbUser2.followings,
+                            followers: dbUser2.followers
+                        };
+                        db.posts.find({ user_id: req.reqUser._id }, function (err, result) {
+                            sendUser.countPosts = result.length;
+                            res.send(200, { message: 'Your changed has been saved!', user: sendUser });
+                        });
+                    })
+                    
+                });
+            }
+
             if (!!editUser.username && editUser.username !== dbUser.username) {
                 saveUser.username = editUser.username;
+                save();
             }
 
             if (!!editUser.newPassword && editUser.newPassword !== "") {
                 pwdMgr.comparePassword(editUser.oldPassword, dbUser.password, function (err, isPasswordMatch) {
- 
-                    if (isPasswordMatch) {                    
-                        saveUser.password = editUser.newPassword;
-                        res.send(200, { message: "Password changed!" });
+
+                    if (isPasswordMatch) {
+                        pwdMgr.cryptPassword(editUser.newPassword, function (err, hash) {
+                            saveUser.password = hash;
+                            save();
+                        });                
                     } else {
                         res.send(403, { message: "Authentication failed. Wrong password." });
                         return next();
@@ -216,34 +247,6 @@ module.exports = function(server, db) {
      
                 });
             }
-
-            // if (!!req.files &&!!req.files.image) {
-            //     cloudinary.uploader.upload(req.files.image.path, function (dbFile) {
-            //         saveUser.avatar = dbFile.url;
-            //     });
-            // }
-
-            db.users.update({ _id: mongojs.ObjectId(req.reqUser._id) }, saveUser, function (err, update) {
-
-                if (err) throw err;
-                db.users.findOne({ _id: mongojs.ObjectId(req.reqUser._id) }, function (err, dbUser2) {
-                    var sendUser = {
-                        userid: req.reqUser._id,
-                        username: dbUser2.username,
-                        email: dbUser2.email,
-                        avatar: dbUser2.avatar,
-                        countFollowers: dbUser2.followers.length,
-                        countFollowings: dbUser2.followings.length,
-                        followings: dbUser2.followings,
-                        followers: dbUser2.followers
-                    };
-                    db.posts.find({ user_id: req.reqUser._id }, function (err, result) {
-                        sendUser.countPosts = result.length;
-                        res.send(200, { message: 'Your information has been saved!', user: sendUser });
-                    });
-                })
-                
-            });
             
         });
 
